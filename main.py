@@ -2,6 +2,7 @@ import speech_recognition
 from speech_recognition import Microphone, Recognizer
 import pyttsx3
 import random
+import pygame
 
 # Initialize recognizer
 recog = Recognizer()
@@ -19,6 +20,13 @@ def speak(text):
     tts_engine.say(text)
     tts_engine.runAndWait()
 
+def play_sound(file_path):
+    pygame.mixer.init()
+    pygame.mixer.music.load(file_path)
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy():
+        continue
+
 
 def speechToTxtGet():
     try:
@@ -33,7 +41,6 @@ def speechToTxtGet():
     except speech_recognition.UnknownValueError as e:
         print(e)
         return "error"
-
 
 def englishAlphabetTest():
     while (True):
@@ -95,12 +102,42 @@ def math_quiz():
             except ValueError:
                 speak("Sorry, I couldn't understand the number. Please try again.")
 
+def animal_sound_game():
+    speak("Welcome to the animal sounds guessing game! Let's start..")
+    animal_sounds = {
+        "cow": "Sounds/cow.wav",
+        "dog": "Sounds/dog.wav",
+        "cat": "Sounds/cat.wav",
+        "sheep": "Sounds/sheep.wav",
+        "duck": "Sounds/duck.wav",
+        "bird": "Sounds/bird.wav",
+        "chicken": "Sounds/chicken.wav",
+        "horse": "Sounds/horse.wav",
+        "owl": "Sounds/owl.wav"
+    }
+    
+    while True:
+        animal, sound_file = random.choice(list(animal_sounds.items()))
+        speak("What animal makes that sound?")
+        play_sound(sound_file)
+        guess = speechToTxtGet()
+
+        if guess == 'stop':
+            speak("Thanks for playing! Goodbye!")
+            welcomeSpeech()
+            break
+        
+        if guess == animal:
+            speak(f"Correct! A {animal} makes that sound.")
+        else:
+            speak(f"Oops! The correct answer is {animal}. A {animal} makes that sound.")
+
 
 def welcomeSpeech():
     speak("Hello Welcome to the Kids Adventure.")
     while (True):
-        speak("If you want the alphabet game say number 1, If You want the maths game say number 2, If you want to "
-              "stop say stop")
+        speak("If you want to play alphabet game say number 1, If You want to play maths game say number 2, If you want to "
+              "play animal sound guessing game say number 3, if you want to stop say stop")
         gameNumber = speechToTxtGet()
         print(gameNumber)
         if gameNumber == 'stop':
@@ -110,9 +147,10 @@ def welcomeSpeech():
             englishAlphabetTest()
         elif gameNumber == 'number two' or gameNumber == 'number 2':
             math_quiz()
+        elif gameNumber == 'number three' or gameNumber == 'number 3':
+            animal_sound_game()
         else:
             speak("say again")
-
 
 if __name__ == '__main__':
     welcomeSpeech()
