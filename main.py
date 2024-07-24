@@ -56,6 +56,45 @@ def englishAlphabetTest():
         else:
             speak(f"no. it is wrong. it start with letter {englishWord[0]}")
 
+def math_quiz():
+    speak("Welcome to the math quiz! Let's start..")
+    operations = ['plus', 'minus', 'times', 'divided by']
+    
+    while True:
+        while True:
+            num1 = random.randint(1, 10)
+            num2 = random.randint(1, 10)
+            operation = random.choice(operations)
+            
+            if operation == 'plus':
+                answer = num1 + num2
+            elif operation == 'minus':
+                answer = num1 - num2
+            elif operation == 'times':
+                answer = num1 * num2
+            elif operation == 'divided by':
+                answer = num1 / num2
+            
+            if answer >= 10 or answer < 0:
+                break
+
+        speak(f"What is {num1} {operation} {num2}?")
+        user_response = speechToTxtGet()
+        
+        if user_response == 'stop':
+            speak("Thanks for playing! Goodbye!")
+            break
+        
+        if user_response:
+            try:
+                user_answer = float(user_response)
+                if user_answer == answer:
+                    speak(f"Great job! {num1} {operation} {num2} is {answer}.")
+                else:
+                    speak(f"Oops! The correct answer is {answer}.")
+            except ValueError:
+                speak("Sorry, I couldn't understand the number. Please try again.")
+
 
 def welcomeSpeech():
     speak("Hello Welcome to the Kids Adventure.")
@@ -65,12 +104,12 @@ def welcomeSpeech():
         gameNumber = speechToTxtGet()
         print(gameNumber)
         if gameNumber == 'stop':
-            speak("Ok Good Bye");
+            speak("Ok Good Bye")
             break
         if gameNumber == 'number one' or gameNumber == 'number 1':
             englishAlphabetTest()
         elif gameNumber == 'number two' or gameNumber == 'number 2':
-            speak("not build")
+            math_quiz()
         else:
             speak("say again")
 
