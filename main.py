@@ -1,4 +1,6 @@
-import speech_recognition
+import RPi.GPIO as GPIO
+from time import sleep
+import speech_recognition as sr
 from speech_recognition import Microphone, Recognizer
 import pygame
 from gtts import gTTS
@@ -9,24 +11,34 @@ from threading import Thread
 import random
 import time
 
+# GPIO setup
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(8, GPIO.OUT, initial=GPIO.LOW)
+
+# Initialize recognizer and pygame
+recog = Recognizer()
+mic = Microphone()
+pygame.mixer.init()
+
+# File paths
 welcome_sound_file = "./sounds/welcome song.mp3"
 victory_sound_file = "./sounds/victory sound.mp3"
 defeat_sound_file = "./sounds/defeat sound.mp3"
 end_sound_file = "./sounds/end sound.mp3"
+aplphabet_song_file="./sounds/Alphabet song.mp3"
+anime_song_file="./sounds/anime song.mp3"
+calc_song_file="./sounds/calc song.mp3"
+        
 
-# Initialize recognizer
-recog = Recognizer()
-mic = Microphone()
-pygame.mixer.init()
-recognized = ''
-
-def speak(text, lang='en'):
+def speak(text, lang='en', rate=1):
     tts = gTTS(text=text, lang=lang)
     with BytesIO() as fp:
         tts.write_to_fp(fp)
         fp.seek(0)
         audio = AudioSegment.from_mp3(fp)
-        play(audio)  # Play the audio directly
+        audio = audio._spawn(audio.raw_data, overrides={"frame_rate": int(audio.frame_rate * rate)})
+        audio = audio.set_frame_rate(audio.frame_rate)
+        play(audio)
 
 def play_background_sound(sound_file, volume):
     pygame.mixer.music.load(sound_file)
@@ -52,6 +64,7 @@ def soundStart(sound_file, rate):
 def speechToTxtGet():
     try:
         with mic:
+            recog.adjust_for_ambient_noise(mic, duration=1)
             print("waiting ...")
             audio = recog.listen(mic)
             print(audio)
@@ -59,7 +72,7 @@ def speechToTxtGet():
         recognized = recognized.lower()
         print(recognized)
         return recognized
-    except speech_recognition.UnknownValueError as e:
+    except sr.UnknownValueError as e:
         print(e)
         return "error"
 
@@ -83,27 +96,24 @@ def errorMessage(message):
     speak(message)
 
 def englishAlphabetTest():
-    sound_thread = Thread(target=play_background_sound, args=(welcome_sound_file, 0.4))
-    sound_thread.start()
+    soundStart(aplphabet_song_file, 0.4)
     time.sleep(1)
-    speak("Welcome to the alphabet game.")
+    speak("Welcome to the letters  game. I'll give you a letter, and you need to tell a word that starts with it. let's play")
+    stop_background_sound()
+
     while True:
-        sound_thread = Thread(target=play_background_sound, args=(welcome_sound_file, 0.4))
-        sound_thread.start()
         alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
                     'u', 'v', 'w', 'x', 'y', 'z']
         random_number = random.randint(0, 25)
         speak(f"Can you say a word starting with letter {alphabet[random_number]}")
-
         # Adjust the recognizer sensitivity to ambient noise
         englishWord = speechToTxtGet()
-        stop_background_sound()
         if englishWord == 'error':
             errorMessage("Can't recognize the word")
             continue
         if englishWord == 'stop':
             stopPlaying("Thanks for playing. Goodbye")
-            welcomeSpeech()
+            return
         print("You said ", englishWord)
         if englishWord[0] == alphabet[random_number]:
             victoryMessage(f"Great. You said {englishWord}. It's correct")
@@ -111,10 +121,11 @@ def englishAlphabetTest():
             errorMessage(f"No. It is wrong. It starts with letter {englishWord[0]}")
 
 def math_quiz():
-    soundStart(welcome_sound_file, 0.4)
+    soundStart(calc_song_file, 0.4)
     time.sleep(2)
-    speak("Welcome to the math quiz! Let's start..")
+    speak("Welcome to the Maths game! I'll asked you some math questions, and your get to solve them. Let's start..")
     time.sleep(1)
+    stop_background_sound()
     operations = ['plus', 'minus', 'times', 'divided by']
     isBelowTen = True
     while True:
@@ -154,7 +165,11 @@ def math_quiz():
                 errorMessage("Sorry, I couldn't understand the number. Please try again.")
 
 def animal_sound_game():
-    speak("Welcome to the animal sounds guessing game! Let's start..")
+    soundStart(anime_song_file, 0.4)
+    time.sleep(2)
+    speak("Welcome to the animal game! I'll play and animal sound, and you should guess which animal made it. Let's start..")
+    time.sleep(1)
+    stop_background_sound()
     animal_sounds = {
         "cow": "./sounds/animal game/cow.wav",
         "dog": "./sounds/animal game/dog.wav",
@@ -170,7 +185,7 @@ def animal_sound_game():
 
     while True:
         animal, sound_file = random.choice(list(animal_sounds.items()))
-        speak("What animal makes that sound?")
+        speak("What animal makes this sound?")
         soundStart(sound_file, 1)
         time.sleep(4)
         stop_background_sound()
@@ -190,33 +205,36 @@ def animal_sound_game():
 
 def welcomeSpeech():
     isFirst = True
-    soundStart(welcome_sound_file, 1)
+    soundStart(welcome_sound_file, 0.3)
     time.sleep(2)
-    speak("Hello, welcome to the Kids Adventure.")
+    speak("Hi,I'm Buu.Can I know your name buddy? ")
+    time.sleep(1)
+    stop_background_sound()
+    childName = speechToTxtGet()
+    soundStart(welcome_sound_file, 0.3)
+    time.sleep(1)
+    speak(f"Hello {childName}. Let's have some fun today")
+    time.sleep(1)
+    stop_background_sound()
     while True:
-        if isFirst:
-            decrease_volume_thread = Thread(target=decrease_volume,
-                                            args=(0.01, 0.1))  # Decrease by 0.01 every 0.1 seconds
-            decrease_volume_thread.start()
-            time.sleep(3)
-            isFirst = False
-        soundStart(welcome_sound_file, 0.4)
-        speak("If you want the alphabet game say number 1, If you want the maths game say number 2, If you want the "
-              "animal sound guessing game say number 3, If you want to stop say stop")
-        stop_background_sound()
-        gameNumber = speechToTxtGet()
-        print(gameNumber)
-        if gameNumber == 'stop':
-            stopPlaying("Goodbye. See you next time")
-            break
-        if gameNumber == 'number one' or gameNumber == 'number 1':
-            englishAlphabetTest()
-        elif gameNumber == 'number two' or gameNumber == 'number 2':
-            math_quiz()
-        elif gameNumber == 'number three' or gameNumber == 'number 3':
-            animal_sound_game()
-        else:
-            speak("Say again")
+        isNotDetected=True
+        speak("We have three super cool games to play.  letters, Maths, animal. Which one do you want to play? ")
+        while isNotDetected:
+            isNotDetected=False
+            gameNumber = speechToTxtGet()
+            print(gameNumber)
+            if gameNumber == 'stop':
+                stopPlaying("Goodbye. See you next time")
+                break
+            if gameNumber == 'letter' or  gameNumber== 'letters':
+                englishAlphabetTest()
+            elif gameNumber == 'maths' or gameNumber=='math':
+                math_quiz()
+            elif gameNumber == 'animal' or gameNumber == 'animals':
+                animal_sound_game()
+            else:
+                speak("ohh ohh. I couldn't get it.Say again")
+                isNotDetected=True
 
 if __name__ == '__main__':
-    welcomeSpeech()
+    englishAlphabetTest()
